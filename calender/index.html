@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lịch Sự Kiện Âm Dương — iCalendar (.ics)</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+          <line x1="16" y1="2" x2="16" y2="6"></line>
+          <line x1="8" y1="2" x2="8" y2="6"></line>
+          <line x1="3" y1="10" x2="21" y2="10"></line>
+        </svg>
+      </div>
+      <div class="brand-titles">
+        <h1>Lịch Sự Kiện Âm Dương</h1>
+        <span>Trình tạo &amp; quản lý lịch chuẩn iCalendar (.ics)</span>
+      </div>
+    </div>
+
+    <div class="header-picker-wrap">
+      <button type="button" class="btn picker-trigger" id="btnPickerTrigger">2026</button>
+
+      <!-- POPOVER CHỌN NĂM HOẶC THÁNG-NĂM -->
+      <div class="picker-popover" id="pickerPopover">
+        <div class="picker-header">
+          <button type="button" class="btn btn-ghost" id="btnPickerPrev">&lt;</button>
+          <span id="pickerTitle">2020 - 2031</span>
+          <button type="button" class="btn btn-ghost" id="btnPickerNext">&gt;</button>
+        </div>
+        <div class="picker-grid" id="pickerGrid"></div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="workspace">
+
+    <!-- SIDEBAR: IMPORT/EXPORT, FORM CẤU HÌNH, DANH SÁCH SỰ KIỆN -->
+    <aside class="sidebar">
+      <div class="io-toolbar">
+        <input type="file" id="fileImport" accept=".ics,text/calendar" hidden />
+        <button type="button" class="btn" id="btnImport">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Import .ics
+        </button>
+        <button type="button" class="btn" id="btnExport">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Export .ics
+        </button>
+      </div>
+
+      <!-- FORM CẤU HÌNH SỰ KIỆN -->
+      <form class="config-form" id="eventForm" autocomplete="off">
+        <div class="field-row">
+          <label for="fSummary">Tiêu đề</label>
+          <input type="text" id="fSummary" placeholder="Nhập tên sự kiện..." required />
+        </div>
+
+        <div class="field-row">
+          <label>Thời gian</label>
+          <div class="time-pair">
+            <input type="time" id="fStartTime" title="Giờ bắt đầu (để trống nếu cả ngày)" />
+            <span>-</span>
+            <input type="time" id="fEndTime" title="Giờ kết thúc" />
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label>Ngày</label>
+          <div class="selected-dates-line empty" id="fSelectedDates" title="">Chưa chọn ngày trên lịch</div>
+        </div>
+
+        <div class="field-row">
+          <label for="fCategories">Nhãn</label>
+          <div class="combobox-wrap" id="categoryCombobox">
+            <input type="text" id="fCategories" placeholder="Gõ hoặc chọn nhãn..." />
+            <button type="button" class="combobox-arrow" id="btnCategoryDropdown" tabindex="-1" title="Chọn nhãn đã có">&#9662;</button>
+            <div class="combobox-menu" id="categoryMenu"></div>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <label for="fLocation">Địa điểm</label>
+          <input type="text" id="fLocation" placeholder="Phòng họp, địa chỉ hoặc link..." />
+        </div>
+
+        <div class="field-row align-top">
+          <label for="fDescription">Mô tả</label>
+          <textarea id="fDescription" rows="2" placeholder="Ghi chú chi tiết..."></textarea>
+        </div>
+
+        <button type="button" class="toggle-advanced" id="btnToggleAdv">+ Mở rộng thuộc tính ICS</button>
+
+        <!-- CÁC TRƯỜNG MỞ RỘNG CHUẨN RFC 5545 -->
+        <div class="advanced-fields" id="advFields">
+          <div class="field-row">
+            <label for="fAlarm">Nhắc nhở</label>
+            <select id="fAlarm">
+              <option value="">Không nhắc</option>
+              <option value="0">Đúng giờ sự kiện</option>
+              <option value="15">Trước 15 phút</option>
+              <option value="30">Trước 30 phút</option>
+              <option value="60">Trước 1 giờ</option>
+              <option value="1440">Trước 1 ngày</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="fStatus">Trạng thái</label>
+            <select id="fStatus">
+              <option value="CONFIRMED">CONFIRMED (Xác nhận)</option>
+              <option value="TENTATIVE">TENTATIVE (Dự kiến)</option>
+              <option value="CANCELLED">CANCELLED (Đã hủy)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="fTransp">Hiển thị rảnh</label>
+            <select id="fTransp">
+              <option value="OPAQUE">OPAQUE (Bận)</option>
+              <option value="TRANSPARENT">TRANSPARENT (Rảnh)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="fClass">Quyền riêng tư</label>
+            <select id="fClass">
+              <option value="PUBLIC">PUBLIC (Công khai)</option>
+              <option value="PRIVATE">PRIVATE (Riêng tư)</option>
+              <option value="CONFIDENTIAL">CONFIDENTIAL (Mật)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="fPriority">Độ ưu tiên</label>
+            <select id="fPriority">
+              <option value="0">0 (Mặc định)</option>
+              <option value="1">1 (Cao nhất)</option>
+              <option value="5">5 (Trung bình)</option>
+              <option value="9">9 (Thấp nhất)</option>
+            </select>
+          </div>
+
+          <div class="field-row">
+            <label for="fUrl">Liên kết URL</label>
+            <input type="url" id="fUrl" placeholder="https://..." />
+          </div>
+
+          <div class="field-row">
+            <label for="fOrganizer">Người tổ chức</label>
+            <input type="text" id="fOrganizer" placeholder="email@domain.com" />
+          </div>
+
+          <div class="field-row">
+            <label for="fRrule">Lặp lại RRULE</label>
+            <input type="text" id="fRrule" placeholder="VD: FREQ=YEARLY;COUNT=5" />
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="btnSaveEvent">Lưu sự kiện</button>
+          <button type="button" class="btn" id="btnResetForm">Làm mới</button>
+        </div>
+      </form>
+
+      <!-- DANH SÁCH SỰ KIỆN -->
+      <div class="event-list-section">
+        <div class="event-list-header">
+          <span>Danh sách sự kiện</span>
+          <span id="eventCount">0 sự kiện</span>
+        </div>
+        <div class="event-list" id="eventList"></div>
+      </div>
+    </aside>
+
+    <!-- ASIDE: HIỂN THỊ LỊCH & CHÚ THÍCH -->
+    <main class="calendar-aside" id="calendarAside">
+      <div class="calendar-topbar">
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-box-selected"></span>
+            <span>Đang chọn</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-dot-event"></span>
+            <span>Có sự kiện</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-box-today"></span>
+            <span>Hôm nay</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-scroll" id="calendarScroll">
+        <div class="months-grid" id="monthsGrid"></div>
+      </div>
+    </main>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="javascript.js"></script>
+</body>
+</html>
